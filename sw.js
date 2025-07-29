@@ -6,8 +6,8 @@ const urlsToCache = [
   'tone.js',
   'manifest.json',
   'icon-192x192.png'
-  // Google Fontsはオフライン化が少し複雑なため、今回はキャッシュ対象外とします。
-  // 接続があれば表示され、なければデフォルトフォントで表示されます。
+  // Google Fontsはオフライン化が少し複雑なため、今回はキャッシュ対象外。
+  // 接続があれば表示され、なければデフォルトフォントで表示。
 ];
 
 self.addEventListener('install', event => {
@@ -25,9 +25,9 @@ self.addEventListener('fetch', event => {
     caches.match(event.request)
       .then(response => {
         if (response) {
-          return response; // キャッシュがあればそれを返す
+          return response; // キャッシュがあればそれを返す。
         }
-        return fetch(event.request); // なければネットワークに取りに行く
+        return fetch(event.request); // なければネットワークに取りに行く。
       })
   );
 });
