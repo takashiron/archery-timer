@@ -68,7 +68,7 @@
             <h1 class="text-2xl md:text-3xl font-bold text-gray-800">アーチェリータイマー</h1>
         </header>
 
-        <!-- UIの変更箇所 -->
+        <!-- UIの変更箇所↓ -->
         <div id="settingsPanel" class="space-y-4">
             <!-- Row 1: Mode and Format -->
             <div class="grid grid-cols-2 gap-4">
@@ -131,7 +131,7 @@
                 </div>
             </div>
         </div>
-        <!-- ★★★ ここまでがUIの変更箇所です ★★★ -->
+        <!-- UIの変更箇所↑ -->
 
         <div class="text-center py-4">
             <div id="statusDisplay" class="text-xl md:text-2xl font-bold min-h-[32px] mb-2 text-blue-600">待機中</div>
@@ -309,9 +309,9 @@
                 if (timeRemaining <= 0) {
                     countdownState = 'shooting';
                     timeRemaining = totalSeconds;
-                    statusDisplay.textContent = '射撃中' + repeatStatus;
+                    statusDisplay.textContent = '行射中' + repeatStatus;
                     statusDisplay.className = 'text-xl md:text-2xl font-bold min-h-[32px] mb-2 text-green-600';
-                    playBuzzer(1); // 射撃開始のブザー
+                    playBuzzer(1); // 行射開始のブザー
                     setUIState('running');
                 }
             } else if (countdownState === 'shooting') {
@@ -348,7 +348,7 @@
                 if (countdownState === 'prep') {
                     statusDisplay.textContent = `ムーブアップ (開始まで ${timeRemaining} 秒)${repeatStatus}`;
                 } else {
-                    statusDisplay.textContent = '射撃中' + repeatStatus;
+                    statusDisplay.textContent = '行射中' + repeatStatus;
                 }
 
             } else {
