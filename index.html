@@ -1,12 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>アーチェリータイマー</title>
-    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tone.js for audio generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,8 +12,10 @@
     <style>
         body { font-family: 'Noto Sans JP', sans-serif; -webkit-tap-highlight-color: transparent; }
         .timer-display-font { font-family: 'Roboto Mono', monospace; }
-        #customSettings { transition: all 0.3s ease-in-out; max-height: 0; overflow: hidden; opacity: 0; }
+        #customSettings, #chimeTimeSetting { transition: all 0.3s ease-in-out; overflow: hidden; }
+        #customSettings { max-height: 0; opacity: 0; }
         #customSettings.open { max-height: 200px; opacity: 1; }
+        #chimeTimeSetting.hidden { max-height: 0 !important; opacity: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; margin-top: 0 !important; }
         button:disabled { background-color: #9ca3af; cursor: not-allowed; opacity: 0.7; }
         .timer-box { transition: all 0.2s ease-in-out; border: 2px solid transparent; }
         .timer-active { border-color: #3b82f6; /* blue-500 */ transform: scale(1.05); box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
@@ -28,9 +28,8 @@
             <h1 class="text-2xl md:text-3xl font-bold text-gray-800">アーチェリータイマー</h1>
         </header>
 
-        <!-- Settings Section -->
         <div id="settingsPanel" class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
                 <div>
                     <label for="preset" class="block text-sm font-bold text-gray-600 mb-1">モード</label>
                     <select id="preset" class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500">
@@ -47,6 +46,10 @@
                         <option value="alternate">交互射ち</option>
                     </select>
                 </div>
+                <div>
+                    <label for="repeatCountInput" class="block text-sm font-bold text-gray-600 mb-1">リピート</label>
+                    <input type="number" id="repeatCountInput" value="0" min="0" class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500 text-center">
+                </div>
             </div>
             <div id="customSettings">
                 <div class="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border">
@@ -60,9 +63,21 @@
                     </div>
                 </div>
             </div>
+            <div id="chimeSettings" class="bg-gray-50 p-4 rounded-lg border space-y-3">
+                <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" id="enableChimeInput" class="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300">
+                    <span class="font-bold text-gray-700">時報を鳴らす</span>
+                </label>
+                <div id="chimeTimeSetting" class="pl-8">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-gray-600">残り</span>
+                        <input type="number" id="chimeTimeInput" value="30" min="1" class="w-20 p-2 border rounded-md text-center text-lg">
+                        <span class="font-bold text-gray-600">秒で通知</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Timer Display Section -->
         <div class="text-center py-4">
             <div id="statusDisplay" class="text-xl md:text-2xl font-bold min-h-[32px] mb-2 text-blue-600">待機中</div>
             <div id="singleTimerDisplay" class="timer-display-font text-7xl md:text-8xl font-bold text-gray-800">0:00</div>
@@ -78,7 +93,6 @@
             </div>
         </div>
 
-        <!-- Controls Section -->
         <div id="controls" class="grid grid-cols-4 gap-2">
             <button id="startButton" class="w-full py-3 text-sm font-bold text-white bg-green-500 rounded-lg shadow-md hover:bg-green-600">スタート</button>
             <button id="pauseButton" class="w-full py-3 text-sm font-bold text-white bg-yellow-500 rounded-lg shadow-md hover:bg-yellow-600">一時停止</button>
@@ -86,6 +100,8 @@
             <button id="stopButton" class="w-full py-3 text-sm font-bold text-white bg-red-500 rounded-lg shadow-md hover:bg-red-600">終了</button>
             <button id="resetButton" class="w-full py-3 text-sm font-bold text-white bg-gray-600 rounded-lg shadow-md hover:bg-gray-700">リセット</button>
         </div>
+
+        <p class="text-right text-xs text-gray-400 mt-4">KAWANO INDUSTRIES</p>
     </div>
 
     <script>
@@ -97,12 +113,17 @@
         const timer1Display = document.getElementById('timer1Display'), timer2Display = document.getElementById('timer2Display');
         const startButton = document.getElementById('startButton'), pauseButton = document.getElementById('pauseButton'), changeButton = document.getElementById('changeButton'), stopButton = document.getElementById('stopButton'), resetButton = document.getElementById('resetButton');
         const controls = document.getElementById('controls');
+        const repeatCountInput = document.getElementById('repeatCountInput');
+        const enableChimeInput = document.getElementById('enableChimeInput');
+        const chimeTimeSetting = document.getElementById('chimeTimeSetting');
+        const chimeTimeInput = document.getElementById('chimeTimeInput');
 
         // --- State ---
         let timerInterval = null, totalSeconds = 0, synth;
         let timeRemaining = 0, timeRemaining1 = 0, timeRemaining2 = 0;
         let isPaused = false, isTimer1Finished = false, isTimer2Finished = false;
         let countdownState = 'idle', activeTimer = 1, changePressCount = 0;
+        let currentRepeat = 0;
 
         // --- Audio ---
         async function initializeAudio() {
@@ -117,6 +138,11 @@
             const now = Tone.now();
             for (let i = 0; i < count; i++) synth.triggerAttackRelease('C5', '8n.', now + i * 1.0);
         }
+        function playChime() {
+            if (!synth) return;
+            const now = Tone.now();
+            synth.triggerAttackRelease('A5', '8n', now);
+        }
 
         // --- UI & Logic ---
         const formatTime = (s) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
@@ -129,6 +155,18 @@
             return (parseInt(customSecondsInput.value)||0) * (parseInt(customArrowsInput.value)||0);
         }
 
+        // --- 変更点: 時報のデフォルト値を更新する関数を追加 ---
+        function updateDefaultChimeTime() {
+            const mode = presetSelect.value;
+            if (mode === 'team' || mode === 'mixed') {
+                chimeTimeInput.value = 20;
+            } else if (mode === 'individual') {
+                chimeTimeInput.value = 30;
+            } else if (mode === 'custom') {
+                chimeTimeInput.value = customSecondsInput.value;
+            }
+        }
+
         function resetTimersToFull() {
             totalSeconds = calculateTotalSeconds();
             timeRemaining = totalSeconds;
@@ -137,16 +175,18 @@
             updateTimerDisplayUI();
         }
 
+        // --- ムーブアップ中はメインタイマーの表示を固定 ---
         function updateTimerDisplayUI() {
+            // 準備中は総時間、それ以外は残り時間を表示
+            const displayTime = (countdownState === 'prep') ? totalSeconds : timeRemaining;
+            const displayTime1 = (countdownState === 'prep') ? totalSeconds : timeRemaining1;
+            const displayTime2 = (countdownState === 'prep') ? totalSeconds : timeRemaining2;
+
             if (formatSelect.value === 'simultaneous') {
-                if (countdownState === 'prep') {
-                    singleTimerDisplay.textContent = formatTime(totalSeconds);
-                } else {
-                    singleTimerDisplay.textContent = formatTime(timeRemaining);
-                }
+                 singleTimerDisplay.textContent = formatTime(displayTime);
             } else {
-                timer1Display.textContent = formatTime(timeRemaining1);
-                timer2Display.textContent = formatTime(timeRemaining2);
+                timer1Display.textContent = formatTime(displayTime1);
+                timer2Display.textContent = formatTime(displayTime2);
                 timer1Box.classList.toggle('timer-active', activeTimer === 1 && !isTimer1Finished && countdownState === 'shooting');
                 timer2Box.classList.toggle('timer-active', activeTimer === 2 && !isTimer2Finished && countdownState === 'shooting');
             }
@@ -157,7 +197,6 @@
             singleTimerDisplay.classList.toggle('hidden', isAlternate);
             alternateTimerDisplay.classList.toggle('hidden', !isAlternate);
 
-            // --- ボタンの表示/非表示とレイアウトを管理 ---
             const buttonConfig = {
                 simultaneous: ['startButton', 'pauseButton', 'stopButton', 'resetButton'],
                 alternate: ['startButton', 'pauseButton', 'changeButton', 'stopButton', 'resetButton']
@@ -165,10 +204,8 @@
             const visibleButtons = buttonConfig[isAlternate ? 'alternate' : 'simultaneous'];
             [startButton, pauseButton, changeButton, stopButton, resetButton].forEach(btn => {
                 btn.classList.toggle('hidden', !visibleButtons.includes(btn.id));
-                btn.parentElement.classList.remove('grid-cols-3', 'grid-cols-4', 'grid-cols-5');
-                btn.parentElement.classList.add(`grid-cols-${visibleButtons.length}`);
             });
-
+            controls.className = `grid grid-cols-${visibleButtons.length} gap-2`;
 
             if (state === 'idle') {
                 startButton.textContent = 'スタート';
@@ -179,24 +216,25 @@
                 stopButton.disabled = true;
                 resetButton.disabled = true;
                 document.querySelectorAll('#settingsPanel select, #settingsPanel input').forEach(el => el.disabled = false);
+                chimeTimeInput.disabled = !enableChimeInput.checked;
                 statusDisplay.textContent = '待機中';
                 statusDisplay.className = 'text-xl md:text-2xl font-bold min-h-[32px] mb-2 text-blue-600';
-            } else if (state === 'running') {
-                startButton.disabled = true;
-                pauseButton.disabled = false;
-                changeButton.disabled = isTimer1Finished || countdownState === 'prep';
+            } else if (state === 'running' || state === 'paused') {
+                if (state === 'paused') {
+                     startButton.textContent = '再開';
+                     startButton.disabled = false;
+                     pauseButton.disabled = true;
+                     changeButton.disabled = true;
+                     statusDisplay.textContent = '一時停止中';
+                     statusDisplay.className = 'text-xl md:text-2xl font-bold min-h-[32px] mb-2 text-gray-500';
+                } else { // running
+                     startButton.disabled = true;
+                     pauseButton.disabled = false;
+                     changeButton.disabled = isTimer1Finished || countdownState === 'prep';
+                }
                 stopButton.disabled = false;
                 resetButton.disabled = false;
                 document.querySelectorAll('#settingsPanel select, #settingsPanel input').forEach(el => el.disabled = true);
-            } else if (state === 'paused') {
-                startButton.textContent = '再開';
-                startButton.disabled = false;
-                pauseButton.disabled = true;
-                changeButton.disabled = true; // 一時停止中は交代不可
-                stopButton.disabled = false;
-                resetButton.disabled = false;
-                statusDisplay.textContent = '一時停止中';
-                statusDisplay.className = 'text-xl md:text-2xl font-bold min-h-[32px] mb-2 text-gray-500';
             }
         }
 
@@ -222,19 +260,24 @@
                     setUIState('running');
                 }
             } else if (countdownState === 'shooting') {
+                let currentRemaining;
                 if (formatSelect.value === 'simultaneous') {
                     timeRemaining--;
-                    if (timeRemaining <= 0) handleStop(true);
+                    currentRemaining = timeRemaining;
+                    if (timeRemaining < 0) { handleStop(true); return; }
                 } else {
-                    if (activeTimer === 1 && !isTimer1Finished) timeRemaining1--;
-                    else if (activeTimer === 2 && !isTimer2Finished) timeRemaining2--;
-
-                    if (timeRemaining1 <= 0 && !isTimer1Finished) endFirstHalf(true);
-                    if (timeRemaining2 <= 0 && !isTimer2Finished) {
-                        isTimer2Finished = true;
-                        handleStop(true);
-                        return;
+                    if (activeTimer === 1 && !isTimer1Finished) {
+                        timeRemaining1--;
+                        currentRemaining = timeRemaining1;
+                        if (timeRemaining1 < 0) endFirstHalf(true);
+                    } else if (activeTimer === 2 && !isTimer2Finished) {
+                        timeRemaining2--;
+                        currentRemaining = timeRemaining2;
+                        if (timeRemaining2 < 0) { isTimer2Finished = true; handleStop(true); return; }
                     }
+                }
+                if (enableChimeInput.checked && currentRemaining === parseInt(chimeTimeInput.value)) {
+                    playChime();
                 }
             }
             updateTimerDisplayUI();
@@ -243,12 +286,14 @@
         function handleStart() {
             if (isPaused) {
                 isPaused = false;
-                setUIState('running');
-                if (countdownState === 'prep') statusDisplay.textContent = `開始まで ${timeRemaining} 秒`;
-                else statusDisplay.textContent = '射撃中';
                 timerInterval = setInterval(tick, 1000);
+                setUIState('running');
+                if(countdownState === 'prep') statusDisplay.textContent = `開始まで ${timeRemaining} 秒`;
+                else statusDisplay.textContent = '射撃中';
+
             } else {
                 totalSeconds = calculateTotalSeconds();
+                currentRepeat = 0;
                 countdownState = 'prep';
                 timeRemaining = 10;
                 timeRemaining1 = totalSeconds;
@@ -257,12 +302,11 @@
                 isTimer2Finished = false;
                 activeTimer = 1;
                 changePressCount = 0;
-                setUIState('running');
-                statusDisplay.textContent = 'ムーブアップ';
-                statusDisplay.className = 'text-xl md:text-2xl font-bold min-h-[32px] mb-2 text-yellow-500';
                 playBuzzer(2);
-                statusDisplay.textContent = `開始まで ${timeRemaining} 秒`;
-                updateTimerDisplayUI();
+                statusDisplay.textContent = `ムーブアップ (開始まで ${timeRemaining} 秒)`;
+                statusDisplay.className = 'text-xl md:text-2xl font-bold min-h-[32px] mb-2 text-yellow-500';
+                setUIState('running');
+                updateTimerDisplayUI(); // 先に呼んで総時間を表示
                 timerInterval = setInterval(tick, 1000);
             }
         }
@@ -290,10 +334,32 @@
             clearInterval(timerInterval);
             timerInterval = null;
             isPaused = false;
+
+            const totalRepeats = parseInt(repeatCountInput.value) || 0;
+
+            if (isNaturalEnd && currentRepeat < totalRepeats) {
+                currentRepeat++;
+                playBuzzer(2);
+                countdownState = 'shooting';
+                timeRemaining = totalSeconds;
+                timeRemaining1 = totalSeconds;
+                timeRemaining2 = totalSeconds;
+                isTimer1Finished = false;
+                isTimer2Finished = false;
+                activeTimer = 1;
+                changePressCount = 0;
+                const repeatStatus = totalRepeats > 0 ? ` (${currentRepeat + 1}/${totalRepeats + 1})` : '';
+                statusDisplay.textContent = '射撃中' + repeatStatus;
+                updateTimerDisplayUI();
+                timerInterval = setInterval(tick, 1000);
+                return;
+            }
+
+            if (isNaturalEnd) playBuzzer(3);
             countdownState = 'idle';
-            playBuzzer(3);
             setUIState('idle');
             resetTimersToFull();
+            currentRepeat = 0;
         }
 
         function handleReset() {
@@ -309,11 +375,24 @@
         presetSelect.addEventListener('change', () => {
             customSettingsDiv.classList.toggle('open', presetSelect.value === 'custom');
             resetTimersToFull();
+            updateDefaultChimeTime(); // 変更点: 呼び出しを追加
         });
-        [customSecondsInput, customArrowsInput].forEach(el => el.addEventListener('input', resetTimersToFull));
+        // --- 変更点: リスナーを分離して時報更新を追加 ---
+        customSecondsInput.addEventListener('input', () => {
+            resetTimersToFull();
+            updateDefaultChimeTime();
+        });
+        customArrowsInput.addEventListener('input', resetTimersToFull);
+        repeatCountInput.addEventListener('input', resetTimersToFull);
+
         formatSelect.addEventListener('change', () => {
             setUIState('idle');
             resetTimersToFull();
+        });
+        enableChimeInput.addEventListener('change', () => {
+            const isEnabled = enableChimeInput.checked;
+            chimeTimeInput.disabled = !isEnabled;
+            chimeTimeSetting.classList.toggle('hidden', !isEnabled);
         });
         startButton.addEventListener('click', async () => { await initializeAudio(); handleStart(); });
         pauseButton.addEventListener('click', handlePause);
@@ -325,7 +404,14 @@
         resetButton.addEventListener('click', handleReset);
 
         // --- Initial Setup ---
-        window.addEventListener('load', () => { setUIState('idle'); resetTimersToFull(); });
+        window.addEventListener('load', () => {
+            setUIState('idle');
+            resetTimersToFull();
+            const isEnabled = enableChimeInput.checked;
+            chimeTimeInput.disabled = !isEnabled;
+            chimeTimeSetting.classList.toggle('hidden', !isEnabled);
+            updateDefaultChimeTime(); // 変更点: 呼び出しを追加
+        });
     </script>
 </body>
 </html>
