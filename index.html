@@ -155,7 +155,7 @@
             return (parseInt(customSecondsInput.value)||0) * (parseInt(customArrowsInput.value)||0);
         }
 
-        // --- 変更点: 時報のデフォルト値を更新する関数を追加 ---
+        // --- 時報のデフォルト値を更新する関数を追加 ---
         function updateDefaultChimeTime() {
             const mode = presetSelect.value;
             if (mode === 'team' || mode === 'mixed') {
@@ -375,9 +375,9 @@
         presetSelect.addEventListener('change', () => {
             customSettingsDiv.classList.toggle('open', presetSelect.value === 'custom');
             resetTimersToFull();
-            updateDefaultChimeTime(); // 変更点: 呼び出しを追加
+            updateDefaultChimeTime(); // 呼び出しを追加
         });
-        // --- 変更点: リスナーを分離して時報更新を追加 ---
+        // --- リスナーを分離して時報更新を追加 ---
         customSecondsInput.addEventListener('input', () => {
             resetTimersToFull();
             updateDefaultChimeTime();
