@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>アーチェリータイマー</title>
     <link rel="manifest" href="manifest.json">
+    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js for audio generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,8 +31,10 @@
             <h1 class="text-2xl md:text-3xl font-bold text-gray-800">アーチェリータイマー</h1>
         </header>
 
+        <!-- Settings Section -->
         <div id="settingsPanel" class="space-y-4">
-            <div class="grid grid-cols-3 gap-4">
+            <!-- 変更点: リピートを削除し、grid-cols-2 に変更 -->
+            <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label for="preset" class="block text-sm font-bold text-gray-600 mb-1">モード</label>
                     <select id="preset" class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500">
@@ -47,10 +51,6 @@
                         <option value="alternate">交互射ち</option>
                     </select>
                 </div>
-                <div>
-                    <label for="repeatCountInput" class="block text-sm font-bold text-gray-600 mb-1">リピート</label>
-                    <input type="number" id="repeatCountInput" value="0" min="0" class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500 text-center">
-                </div>
             </div>
             <div id="customSettings">
                 <div class="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border">
@@ -64,21 +64,32 @@
                     </div>
                 </div>
             </div>
-            <div id="chimeSettings" class="bg-gray-50 p-4 rounded-lg border space-y-3">
-                <label class="flex items-center space-x-3 cursor-pointer">
-                    <input type="checkbox" id="enableChimeInput" class="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300">
-                    <span class="font-bold text-gray-700">時報を鳴らす</span>
-                </label>
-                <div id="chimeTimeSetting" class="pl-8">
-                    <div class="flex items-center gap-2">
-                        <span class="font-bold text-gray-600">残り</span>
-                        <input type="number" id="chimeTimeInput" value="30" min="1" class="w-20 p-2 border rounded-md text-center text-lg">
-                        <span class="font-bold text-gray-600">秒で通知</span>
+            <!-- 変更点: リピートと時報を横並びにするための新しいコンテナ -->
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Repeat Setting Box -->
+                <div class="bg-gray-50 p-4 rounded-lg border flex flex-col justify-center">
+                    <label for="repeatCountInput" class="block text-sm font-bold text-gray-600 mb-1">リピート</label>
+                    <input type="number" id="repeatCountInput" value="0" min="0" class="w-full p-3 bg-white border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500 text-center">
+                </div>
+
+                <!-- Chime Setting Box -->
+                <div id="chimeSettings" class="bg-gray-50 p-4 rounded-lg border space-y-3">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" id="enableChimeInput" class="h-5 w-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300">
+                        <span class="font-bold text-gray-700">時報を鳴らす</span>
+                    </label>
+                    <div id="chimeTimeSetting" class="pl-8">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-gray-600">残り</span>
+                            <input type="number" id="chimeTimeInput" value="30" min="1" class="w-20 p-2 border rounded-md text-center text-lg">
+                            <span class="font-bold text-gray-600">秒</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Timer Display Section -->
         <div class="text-center py-4">
             <div id="statusDisplay" class="text-xl md:text-2xl font-bold min-h-[32px] mb-2 text-blue-600">待機中</div>
             <div id="singleTimerDisplay" class="timer-display-font text-7xl md:text-8xl font-bold text-gray-800">0:00</div>
@@ -94,6 +105,7 @@
             </div>
         </div>
 
+        <!-- Controls Section -->
         <div id="controls" class="grid grid-cols-4 gap-2">
             <button id="startButton" class="w-full py-3 text-sm font-bold text-white bg-green-500 rounded-lg shadow-md hover:bg-green-600">スタート</button>
             <button id="pauseButton" class="w-full py-3 text-sm font-bold text-white bg-yellow-500 rounded-lg shadow-md hover:bg-yellow-600">一時停止</button>
@@ -101,7 +113,7 @@
             <button id="stopButton" class="w-full py-3 text-sm font-bold text-white bg-red-500 rounded-lg shadow-md hover:bg-red-600">終了</button>
             <button id="resetButton" class="w-full py-3 text-sm font-bold text-white bg-gray-600 rounded-lg shadow-md hover:bg-gray-700">リセット</button>
         </div>
-
+        
         <p class="text-right text-xs text-gray-400 mt-4">KAWANO INDUSTRIES</p>
     </div>
 
@@ -137,7 +149,7 @@
         function playBuzzer(count) {
             if (!synth) return;
             const now = Tone.now();
-            for (let i = 0; i < count; i++) synth.triggerAttackRelease('C5', '8n.', now + i * 1.0);
+            for (let i = 0; i < count; i++) synth.triggerAttackRelease('C5', '8n.', now + i * 0.5);
         }
         function playChime() {
             if (!synth) return;
@@ -156,7 +168,6 @@
             return (parseInt(customSecondsInput.value)||0) * (parseInt(customArrowsInput.value)||0);
         }
 
-        // --- 時報のデフォルト値を更新する関数を追加 ---
         function updateDefaultChimeTime() {
             const mode = presetSelect.value;
             if (mode === 'team' || mode === 'mixed') {
@@ -176,9 +187,7 @@
             updateTimerDisplayUI();
         }
 
-        // --- ムーブアップ中はメインタイマーの表示を固定 ---
         function updateTimerDisplayUI() {
-            // 準備中は総時間、それ以外は残り時間を表示
             const displayTime = (countdownState === 'prep') ? totalSeconds : timeRemaining;
             const displayTime1 = (countdownState === 'prep') ? totalSeconds : timeRemaining1;
             const displayTime2 = (countdownState === 'prep') ? totalSeconds : timeRemaining2;
@@ -247,7 +256,7 @@
             changeButton.disabled = true;
             if (isTimer2Finished) handleStop(true);
         }
-
+        
         function tick() {
             if (countdownState === 'prep') {
                 timeRemaining--;
@@ -307,7 +316,7 @@
                 statusDisplay.textContent = `ムーブアップ (開始まで ${timeRemaining} 秒)`;
                 statusDisplay.className = 'text-xl md:text-2xl font-bold min-h-[32px] mb-2 text-yellow-500';
                 setUIState('running');
-                updateTimerDisplayUI(); // 先に呼んで総時間を表示
+                updateTimerDisplayUI();
                 timerInterval = setInterval(tick, 1000);
             }
         }
@@ -335,7 +344,7 @@
             clearInterval(timerInterval);
             timerInterval = null;
             isPaused = false;
-
+            
             const totalRepeats = parseInt(repeatCountInput.value) || 0;
 
             if (isNaturalEnd && currentRepeat < totalRepeats) {
@@ -355,7 +364,7 @@
                 timerInterval = setInterval(tick, 1000);
                 return;
             }
-
+            
             if (isNaturalEnd) playBuzzer(3);
             countdownState = 'idle';
             setUIState('idle');
@@ -376,9 +385,8 @@
         presetSelect.addEventListener('change', () => {
             customSettingsDiv.classList.toggle('open', presetSelect.value === 'custom');
             resetTimersToFull();
-            updateDefaultChimeTime(); // 呼び出しを追加
+            updateDefaultChimeTime();
         });
-        // --- リスナーを分離して時報更新を追加 ---
         customSecondsInput.addEventListener('input', () => {
             resetTimersToFull();
             updateDefaultChimeTime();
@@ -405,13 +413,13 @@
         resetButton.addEventListener('click', handleReset);
 
         // --- Initial Setup ---
-        window.addEventListener('load', () => {
-            setUIState('idle');
-            resetTimersToFull();
+        window.addEventListener('load', () => { 
+            setUIState('idle'); 
+            resetTimersToFull(); 
             const isEnabled = enableChimeInput.checked;
             chimeTimeInput.disabled = !isEnabled;
             chimeTimeSetting.classList.toggle('hidden', !isEnabled);
-            updateDefaultChimeTime(); // 変更点: 呼び出しを追加
+            updateDefaultChimeTime();
         });
     </script>
     <script>
